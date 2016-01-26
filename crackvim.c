@@ -350,7 +350,7 @@ int main(int argc, char *argv[]){
 	if(crib){
 		printf("searching for crib: \"%s\"\n", crib);
 	} else {
-		printf("searching for text files\n");
+		printf("searching for ascii text files\n");
 	}
 	if(dict){
 		printf("using dictionary file: %s\n", dict_filename);
@@ -365,7 +365,7 @@ int main(int argc, char *argv[]){
 	printf("\n");
 	make_crc_table();
 
-	if(nbytes == 0){
+	if(nbytes == 0 || nbytes > filesize - 12){
 		nbytes = filesize - 12;
 	}
 	crack(filedata+12, nbytes, crib, max_len, charset, start_passwd, dict);
