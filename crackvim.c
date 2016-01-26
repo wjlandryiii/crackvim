@@ -217,8 +217,15 @@ int crack(uint8_t *ciphertext, long length, char *crib, int max_len, int charset
 }
 
 void help(){
-	printf("crackvim: [-d dict_file] [-p start_passwd] [-C i_charset] [-l max_passwd_len] [-c crib] [filename]\n");
-	printf("\n");
+	fprintf(stderr, "crackvim: [options] [filename]\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "Options:\n");
+	fprintf(stderr, "\t-d dict_file\n");
+	fprintf(stderr, "\t-p start_password (default: emty string)\n");
+	fprintf(stderr, "\t-C charset (default: 0)\n");
+	fprintf(stderr, "\t-l max_passwd_len (default: 6)\n");
+	fprintf(stderr, "\t-c crib\n");
+	fprintf(stderr, "\n");
 }
 
 int main(int argc, char *argv[]){
@@ -244,9 +251,9 @@ int main(int argc, char *argv[]){
 					crib = argv[0];
 					argc--; argv++;
 				} else {
-					printf("\t-c [crib]\n\n");
-					printf("Only report plaintexts containing crib.\n");
-					printf("Without a crib, crackvim will report any plaintext that looks like an ascii text file\n\n");
+					fprintf(stderr, "\t-c [crib]\n\n");
+					fprintf(stderr, "Only report plaintexts containing crib.\n");
+					fprintf(stderr, "Without a crib, crackvim will report any plaintext that looks like an ascii text file\n\n");
 					exit(1);
 				}
 			} else if(strcmp(argv[0], "-l") == 0){
@@ -255,8 +262,8 @@ int main(int argc, char *argv[]){
 					max_len = atoi(argv[0]);
 					argc--; argv++;
 				} else {
-					printf("\t-l [max_passwd_len]\n\n");
-					printf("Only test password up to length.  Default: 6\n\n");
+					fprintf(stderr, "\t-l [max_passwd_len]\n\n");
+					fprintf(stderr, "Only test password up to length.  Default: 6\n\n");
 					exit(1);
 				}
 			} else if(strcmp(argv[0], "-C") == 0){
@@ -264,19 +271,19 @@ int main(int argc, char *argv[]){
 				if(0 < argc){
 					charset = atoi(argv[0]);
 					if(charset < 0 || 3 < charset){
-						printf("Invalid character set\n");
+						fprintf(stderr, "Invalid character set\n");
 						exit(1);
 					}
 					argc--; argv++;
 				} else {
-					printf("\t-c [charset]\n\n");
-					printf("Character set for password generation\n");
-					printf("\t0: lower alpha (Default)\n");
-					printf("\t1: upper alpha\n");
-					printf("\t2: alpha\n");
-					printf("\t3: alphanum\n");
-					printf("\t4: ascii 0x20 - 0x7e\n");
-					printf("\n");
+					fprintf(stderr, "\t-c [charset]\n\n");
+					fprintf(stderr, "Character set for password generation\n");
+					fprintf(stderr, "\t0: lower alpha (Default)\n");
+					fprintf(stderr, "\t1: upper alpha\n");
+					fprintf(stderr, "\t2: alpha\n");
+					fprintf(stderr, "\t3: alphanum\n");
+					fprintf(stderr, "\t4: ascii 0x20 - 0x7e\n");
+					fprintf(stderr, "\n");
 					exit(1);
 				}
 			} else if(strcmp(argv[0], "-p") == 0){
@@ -285,11 +292,11 @@ int main(int argc, char *argv[]){
 					start_passwd = argv[0];
 					argc--; argv++;
 				} else {
-					printf("\t-p [start_password]\n\n");
-					printf("Choose a password to start with.\n");
-					printf("Default value is the empty string.\n");
-					printf("This feature can be used to 'resume' an attack at a specific point\n");
-					printf("\n");
+					fprintf(stderr, "\t-p [start_password]\n\n");
+					fprintf(stderr, "Choose a password to start with.\n");
+					fprintf(stderr, "Default value is the empty string.\n");
+					fprintf(stderr, "This feature can be used to 'resume' an attack at a specific point\n");
+					fprintf(stderr, "\n");
 					exit(1);
 				}
 			} else if(strcmp(argv[0], "-d") == 0){
@@ -306,8 +313,8 @@ int main(int argc, char *argv[]){
 						}
 					}
 				} else {
-					printf("\t-d [dictionary file]\n\n");
-					printf("Dictionary attack.  Use \"-d -\" for stdin\n\n");
+					fprintf(stderr, "\t-d [dictionary file]\n\n");
+					fprintf(stderr, "Dictionary attack.  Use \"-d -\" for stdin\n\n");
 					exit(1);
 				}
 			} else {
@@ -324,6 +331,22 @@ int main(int argc, char *argv[]){
 
 	load_file(filename, &filedata, &filesize);
 	printf("loaded %s: %ld bytes\n", filename, filesize);
+	if(crib){
+		printf("searching for crib: \"%s\"\n", crib);
+	} else {
+		printf("searching for text files\n");
+	}
+	if(dict){
+		printf("using dictionary file: %s\n", dict_filename);
+	} else {
+		printf("using brute force\n");
+		printf("max password length: %d\n", max_len);
+		printf("charset: %d\n", charset);
+		if(start_passwd){
+			printf("starting with password: %s\n", start_passwd);
+		}
+	}
+	printf("\n");
 	make_crc_table();
 	crack(filedata+12, filesize-12, crib, max_len, charset, start_passwd, dict);
 	return 0;
