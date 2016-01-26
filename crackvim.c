@@ -187,7 +187,7 @@ int crack(uint8_t *ciphertext, long length, char *crib, int max_len, int charset
 		if(crib != NULL){
 			if(strstr(plaintext, crib) != NULL){
 				printf("Possible password: '%s'\n", password);
-				printf("Plaintext: %32s", plaintext);
+				printf("Plaintext: %-32s\n", plaintext);
 			}
 		} else {
 			for(i = 0; i < length; i++){
@@ -197,7 +197,7 @@ int crack(uint8_t *ciphertext, long length, char *crib, int max_len, int charset
 			}
 			if(i == length){
 				printf("Possible password: '%s'\n", password);
-				printf("Plaintext: %32s", plaintext);
+				printf("Plaintext: %-32s\n", plaintext);
 			}
 		}
 		if(dict){
@@ -220,6 +220,7 @@ void help(){
 	fprintf(stderr, "crackvim: [options] [filename]\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "Options:\n");
+	fprintf(stderr, "\t-b nbytes (default: 128)\n");
 	fprintf(stderr, "\t-d dict_file\n");
 	fprintf(stderr, "\t-p start_password (default: emty string)\n");
 	fprintf(stderr, "\t-C charset (default: 0)\n");
@@ -238,6 +239,7 @@ int main(int argc, char *argv[]){
 	char *start_passwd = NULL;
 	char *dict_filename;
 	FILE *dict = NULL;
+	int nbytes = 128;
 
 	if(argc < 2){
 		help();
@@ -317,6 +319,20 @@ int main(int argc, char *argv[]){
 					fprintf(stderr, "Dictionary attack.  Use \"-d -\" for stdin\n\n");
 					exit(1);
 				}
+			} else if(strcmp(argv[0], "-b") == 0){
+				argc--; argv++;
+				if(0 < argc){
+					nbytes = atoi(argv[0]);
+					argc--; argv++;
+					if(nbytes < 0){
+						die("nbytes must be positive integer or zero");
+					}
+				} else {
+					fprintf(stderr, "\t-b [nbytes]\n\n");
+					fprintf(stderr, "only analyze first nbytes of file.\n");
+					fprintf(stderr, "the value 0 means analyze whole file\n");
+					exit(1);
+				}
 			} else {
 				break;
 			}
@@ -348,6 +364,10 @@ int main(int argc, char *argv[]){
 	}
 	printf("\n");
 	make_crc_table();
-	crack(filedata+12, filesize-12, crib, max_len, charset, start_passwd, dict);
+
+	if(nbytes == 0){
+		nbytes = filesize - 12;
+	}
+	crack(filedata+12, nbytes, crib, max_len, charset, start_passwd, dict);
 	return 0;
 }
