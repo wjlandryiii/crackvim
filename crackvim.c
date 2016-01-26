@@ -14,6 +14,7 @@
 void die(char *reason){
 	fflush(stdout);
 	fputs(reason, stderr);
+	fputs("\n", stderr);
 	exit(1);
 }
 
@@ -45,7 +46,7 @@ void load_file(char *filename, uint8_t **filedata, long *filesize){
 			die("error getting file size");
 		}
 	} else {
-		die("error opending file");
+		die("error opening file");
 	}
 
 	if(memcmp(data, "VimCrypt~", 9) != 0){
@@ -150,11 +151,13 @@ int inc_password(char *password, int max_len, int charset){
 	}
 }
 
-int crack(uint8_t *ciphertext, long length, char *crib, int max_len, int charset, char *start_passwd){
+int crack(uint8_t *ciphertext, long length, char *crib, int max_len, int charset, char *start_passwd, FILE *dict){
 	char password[32] = {0};
+	char *newline;
 	char *plaintext;
 	uint32_t key[3];
 	long i;
+	int running;
 
 	if(start_passwd){
 		strncpy(password, start_passwd, sizeof(password));
@@ -166,7 +169,17 @@ int crack(uint8_t *ciphertext, long length, char *crib, int max_len, int charset
 		die("error allocating memory");
 	}
 
-	do {
+	if(dict){
+		if(fgets(password, sizeof(password), dict) == NULL){
+			die("error reading from dictionary file");
+		}
+		newline = strchr(password, '\n');
+		if(newline){
+			*newline = 0;
+		}
+	}
+
+	while(running){
 		init_key(key, password);
 
 		pkzip_decrypt(key, ciphertext, length, (uint8_t *)plaintext);
@@ -187,13 +200,24 @@ int crack(uint8_t *ciphertext, long length, char *crib, int max_len, int charset
 				printf("Plaintext: %32s", plaintext);
 			}
 		}
-	} while(inc_password(password, max_len, charset));
+		if(dict){
+			if(fgets(password, sizeof(password), dict) == NULL){
+				running = 0;
+			}
+			newline = strchr(password, '\n');
+			if(newline){
+				*newline = 0;
+			}
+		} else {
+			running = inc_password(password, max_len, charset);
+		}
+	}
 
 	return 0;
 }
 
 void help(){
-	printf("crackvim: [-p start_passwd] [-C i_charset] [-l max_passwd_len] [-c crib] [filename]\n");
+	printf("crackvim: [-d dict_file] [-p start_passwd] [-C i_charset] [-l max_passwd_len] [-c crib] [filename]\n");
 	printf("\n");
 }
 
@@ -205,6 +229,8 @@ int main(int argc, char *argv[]){
 	int max_len = 6;
 	int charset = 0;
 	char *start_passwd = NULL;
+	char *dict_filename;
+	FILE *dict = NULL;
 
 	if(argc < 2){
 		help();
@@ -266,6 +292,24 @@ int main(int argc, char *argv[]){
 					printf("\n");
 					exit(1);
 				}
+			} else if(strcmp(argv[0], "-d") == 0){
+				argc--; argv++;
+				if(0 < argc){
+					dict_filename = argv[0];
+					argc--; argv++;
+					if(strcmp(dict_filename, "-") == 0){
+						dict = stdin;
+					} else {
+						dict = fopen(dict_filename, "r");
+						if(dict == NULL){
+							die("error opening dictionary file");
+						}
+					}
+				} else {
+					printf("\t-d [dictionary file]\n\n");
+					printf("Dictionary attack.  Use \"-d -\" for stdin\n\n");
+					exit(1);
+				}
 			} else {
 				break;
 			}
@@ -281,6 +325,6 @@ int main(int argc, char *argv[]){
 	load_file(filename, &filedata, &filesize);
 	printf("loaded %s: %ld bytes\n", filename, filesize);
 	make_crc_table();
-	crack(filedata+12, filesize-12, crib, max_len, charset, start_passwd);
+	crack(filedata+12, filesize-12, crib, max_len, charset, start_passwd, dict);
 	return 0;
 }
