@@ -13,7 +13,7 @@ Help screen
     Options:
     	-b nbytes (default: 128)
     	-d dict_file
-    	-p start_password (default: emty string)
+    	-p start_password (default: empty string)
     	-C charset (default: 0)
     	-l max_passwd_len (default: 6)
     	-c crib
